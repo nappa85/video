@@ -1,0 +1,22 @@
+# FaceFusion for face swapping, CPU only (FaceFusion has no Vulkan provider).
+# Build with: ./faceswap.sh setup
+FROM python:3.12-slim
+
+# ffmpeg/ffprobe encode and decode video; curl downloads models (FaceFusion checks for it at startup); git fetches the source
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ffmpeg curl git \
+    && rm -rf /var/lib/apt/lists/*
+
+ARG FACEFUSION_REF=master
+RUN git clone --depth 1 --branch "${FACEFUSION_REF}" https://github.com/facefusion/facefusion /app
+
+WORKDIR /app
+
+# Use the project's own installer so the pinned onnxruntime and requirements match
+RUN python install.py default --skip-conda
+
+# Models download on first run; let any UID the container runs as write here
+RUN chmod -R a+rwX /app
+
+ENTRYPOINT ["python", "facefusion.py"]
+CMD ["--help"]

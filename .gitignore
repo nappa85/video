@@ -1,0 +1,21 @@
+# Model weights, downloaded by setup.sh (multi-GB)
+models/
+*.part
+
+# Generated output and logs
+out/
+*.log
+
+# Your input media (personal footage and photos); top level only
+/*.mp4
+/*.jpg
+/*.png
+/*.avi
+/*.mov
+/*.webm
+
+# Editor and OS files
+.vscode/
+.idea/
+*.swp
+.DS_Store

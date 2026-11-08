@@ -1,0 +1,31 @@
+# stable-diffusion.cpp (sd-cli) with the Vulkan backend, for Wan2.2 TI2V-5B.
+# Build with: ./setup.sh
+FROM ubuntu:24.04 AS build
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        build-essential cmake git ca-certificates libvulkan-dev glslc spirv-headers \
+    && rm -rf /var/lib/apt/lists/*
+
+ARG SDCPP_REF=master
+RUN git clone --depth 1 --branch "${SDCPP_REF}" --recurse-submodules --shallow-submodules \
+        https://github.com/leejet/stable-diffusion.cpp /src
+
+WORKDIR /src
+RUN cmake -S . -B build -DSD_VULKAN=ON -DCMAKE_BUILD_TYPE=Release \
+    && cmake --build build --config Release -j"$(nproc)"
+
+# Runtime: Vulkan loader plus Mesa drivers (RADV for AMD, ANV for Intel, NVK for NVIDIA)
+FROM ubuntu:24.04
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        libvulkan1 mesa-vulkan-drivers libgomp1 curl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=build /src/build/bin/ /opt/sd/bin/
+ENV PATH="/opt/sd/bin:${PATH}" \
+    LD_LIBRARY_PATH="/opt/sd/bin"
+
+ENTRYPOINT ["sd-cli"]
+CMD ["--help"]
